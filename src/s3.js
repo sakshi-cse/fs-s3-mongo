@@ -14,7 +14,7 @@ module.exports.write = function write( toWrite ) {
     return Promise.reject({ code: 501, message: 'Not implemented.' });
 };
 
-module.exports.copy = function copy( toFind, newPlace ) {
+module.exports.copy = function copy( toFind, destination ) {
     // TODO: hit bucket and copy
 
     return Promise.reject({ code: 501, message: 'Not implemented.' });
