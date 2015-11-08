@@ -1,14 +1,12 @@
 'use strict';
 
-const mongoModule = require( './mongo.js' );
-const s3Module = require( './s3.js' );
+const operations = require( './operations.js' );
 
 module.exports = {
-    fsSearch: mongoModule.search,
-    fsUpdate: mongoModule.update,
-    fsDelete: mongoModule.destroy,
-    readResource: s3Module.read,
-    writeResource: s3Module.write,
-    copyResource: s3Module.copy,
-    deleteResource: s3Module.destroy,
+    read: operations.read,
+    search: operations.search,
+    write: operations.write,
+    update: operations.update,
+    copy: operations.copy,
+    destroy: operations.destroy,
 };
