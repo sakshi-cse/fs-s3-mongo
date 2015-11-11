@@ -6,56 +6,62 @@ const mongo = require( './mongo.js' );
 const s3 = require( './s3.js' );
 const utils = require( './utils.js' );
 
-module.exports.read = function read( toFind ) {
-    return s3.read( toFind )
+module.exports.read = function read( path ) {
+    return s3.read( path )
     .catch( utils.handleError );
 };
 
-module.exports.search = function search( toFind ) {
-    return mongo.search( toFind )
+module.exports.search = function search( searchObj ) {
+    return mongo.search( searchObj )
     .catch( utils.handleError );
 };
 
-module.exports.write = function write( toWrite ) {
-    return s3.write( toWrite )
-    .then(( data ) => {
+module.exports.write = function write( path, content ) {
+    return s3.write( path, content )
+    .then(( rawData ) => {
         // Configure data
 
-        return data;
+        return rawData;
     })
-    .then( mongo.update )
+    .then(( data ) => {
+        mongo.update( path, data );
+    })
     .catch( utils.handleError );
 };
 
-module.exports.update = function update( toFind, toWrite ) {
-    return s3.write( toWrite )
-    .then(( data ) => {
+module.exports.update = function update( path, content ) {
+    return s3.write( path, content )
+    .then(( rawData ) => {
         // Configure data
 
-        return data;
+        return rawData;
     })
-    .then( mongo.update )
+    .then(( data ) => {
+        mongo.update( path, data );
+    })
     .catch( utils.handleError );
 };
 
-module.exports.copy = function copy( toFind, destination ) {
-    return s3.copy( toFind, destination )
-    .then(( data ) => {
+module.exports.copy = function copy( path, destination ) {
+    return s3.copy( path, destination )
+    .then(( rawData ) => {
         // Configure data
 
-        return data;
+        return rawData;
     })
-    .then( mongo.update )
+    .then(( data ) => {
+        mongo.update( path, data );
+    })
     .catch( utils.handleError );
 };
 
-module.exports.destroy = function destroy( toFind ) {
-    return s3.destroy( toFind )
-    .then(( data ) => {
+module.exports.destroy = function destroy( path ) {
+    return s3.destroy( path )
+    .then(( rawData ) => {
         // Configure data
 
-        return data;
+        return rawData;
     })
-    .then( mongo.toFind )
+    .then( mongo.destroy )
     .catch( utils.handleError );
 };
