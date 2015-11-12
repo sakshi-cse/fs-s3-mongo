@@ -2,6 +2,7 @@
 
 // TODO: add more errors
 const errObject = {
+    'NOT_IMPLEMENTED': 'NOT_IMPLEMENTED',
     'DEFAULT_SERVER_ERROR': 'DEFAULT_SERVER_ERROR',
 };
 

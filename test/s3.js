@@ -13,6 +13,13 @@ chai.use( sinonchai );
 chai.use( chaiaspromised );
 
 describe( 's3 wrapper', () => {
+    it( 'should reject with INVALID_RESOURCE_OR_PATH when given an invalid path', () => {
+        const path = 'invalid/path/here/';
+        const resource = 'goat.jpg';
+
+        return expect( s3.read( path + resource )).to.be.rejectedWith( 'INVALID_RESOURCE_OR_PATH' );
+    });
+
     it( 'should return a resource when given a valid path', () => {
         const path = 'valid/path/here/';
         const resource = 'goat.jpg';
