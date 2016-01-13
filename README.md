@@ -3,7 +3,7 @@ Wrapper for the s3 client and mongo interface for use with the http-fs-node modu
 
 # Workflow
 
-![Workflow Diagram](images/fs_workflow.jpg "Workflow Diagram")
+![Workflow Diagram](images/FS_workflow.jpg "Workflow Diagram")
 
 # Contribution
 
