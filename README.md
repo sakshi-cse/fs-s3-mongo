@@ -1,7 +1,7 @@
 # fs-s3-mongo
 Wrapper for the s3 client and mongo interface for use with the http-fs-node module
 
-![Workflow Diagram](images/FS_workflow.jpg "Workflow Diagram")
+![Flowchart](images/FS_flowchart.jpg "Flowchart")
 
 # Contribution
 
