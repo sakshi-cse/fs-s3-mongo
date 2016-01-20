@@ -5,7 +5,6 @@ const Schema = mongoose.Schema;
 
 const metadataSchema = new Schema({
     guid: String,         // s3 guid
-    name: String,         // name of the resource
     mimeType: String,     // http://www.freeformatter.com/mime-types-list.html (includes folder type)
     size: Number,         // in bytes
     dateCreated: Date,
