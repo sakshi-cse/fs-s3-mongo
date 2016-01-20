@@ -12,7 +12,6 @@ const sinon = require( 'sinon' );
 const index = require( '../src/index.js' );
 const s3 = require( '../src/s3.js' );
 const mongo = require( '../src/mongo.js' );
-// const utils = require( '../src/utils.js' );
 
 chai.use( sinonchai );
 chai.use( chaiaspromised );
@@ -22,7 +21,7 @@ const userId = 12345;
 // Declare spies here to prevent rewrapping them
 let s3ReadSpy;
 let s3WriteSpy;
-// let s3CopySpy;
+let s3CopySpy;
 let s3DestroySpy;
 let s3DownloadSpy;
 let mongoInsertSpy;
@@ -34,7 +33,7 @@ let mongoGetGUIDSpy;
 beforeEach(() => {
     s3ReadSpy = sinon.spy( s3, 'read' );
     s3WriteSpy = sinon.spy( s3, 'write' );
-    // s3CopySpy = sinon.spy( s3, 'copy' );
+    s3CopySpy = sinon.spy( s3, 'copy' );
     s3DestroySpy = sinon.spy( s3, 'destroy' );
     s3DownloadSpy = sinon.spy( s3, 'download' );
     mongoInsertSpy = sinon.spy( mongo, 'insert' );
@@ -44,7 +43,7 @@ beforeEach(() => {
     mongoGetGUIDSpy = sinon.spy( mongo, 'getGUID' );
 });
 
-const s3Actions = [ 'read', 'write', 'destroy', 'download' ]; // copy
+const s3Actions = [ 'read', 'write', 'copy', 'destroy', 'download' ];
 const mongoActions = [ 'insert', 'search', 'update', 'destroy', 'getGUID' ];
 afterEach(() => {
     s3Actions.forEach(( action ) => {
@@ -150,7 +149,7 @@ describe( 'FS OPERATIONS:', () => {
             index.inspect( path + resource, userId, fields );
 
             expect( mongoSearchSpy ).to.be.calledOnce;
-            expect( mongoSearchSpy ).to.be.calledWithExactly({ parent: path, userId: userId }, null );
+            expect( mongoSearchSpy ).to.be.calledWithExactly({ parent: path, name: resource, userId: userId }, null );
         });
 
         it( 'should return all metadata fields by default', () => {
@@ -220,24 +219,32 @@ describe( 'FS OPERATIONS:', () => {
 
     // TODO: Determine the mongo implementation for copying a resource
     describe( 'copy() ', () => {
-        it( 'should call into mongo.search() for the resource and for the destination, then mongo.insert(), then mongo.update', () => {
+        it( 'should call into mongo.getGUID() for the resource, mongo.search() for the destination, then mongo.insert(), then mongo.update', () => {
             const path = '/valid/path/here/';
             const resource = 'test.txt';
             const destination = '/new/valid/path/here/';
+            const newGUID = 'abcde12345';
 
             index.copy( path + resource, userId, destination, [ ]);
 
-            expect( mongoSearchSpy ).to.be.calledTwice;
-            expect( mongoSearchSpy.getCall( 0 )).to.be.calledWithExactly({ parent: path, userId: userId }, null );
-            expect( mongoSearchSpy.getCall( 1 )).to.be.calledWithExactly({ parent: destination, userId: userId }, null );
-            expect( mongoSearchSpy.getCall( 1 )).to.be.calledBefore( mongoInsertSpy );
+            expect( mongoGetGUIDSpy ).to.be.calledOnce;
+            expect( mongoGetGUIDSpy ).to.be.calledWithExactly( path + resource, userId );
+            expect( mongoGetGUIDSpy ).to.be.calledBefore( mongoSearchSpy );
+
+            expect( mongoSearchSpy ).to.be.calledOnce;
+            expect( mongoSearchSpy ).to.be.calledWithExactly({ parent: destination, name: resource, userId: userId }, null );
+            expect( mongoSearchSpy ).to.be.calledBefore( s3CopySpy );
+
+            expect( s3CopySpy ).to.be.calledOnce;
+            expect( s3CopySpy ).to.be.calledWithExactly( mongoGetGUIDSpy.returnValues[0], newGUID );
+            expect( s3CopySpy ).to.be.calledBefore( mongoInsertSpy );
 
             expect( mongoInsertSpy ).to.be.calledOnce;
             expect( mongoInsertSpy ).to.be.calledWithExactly({ TODO: 'TODO' });
             expect( mongoInsertSpy ).to.be.calledBefore( mongoUpdateSpy );
 
             expect( mongoUpdateSpy ).to.be.calledOnce;
-            expect( mongoUpdateSpy ).to.be.calledWithExactly({ parent: path, userId: userId }, { lastUpdatedTime: Date.now() });
+            expect( mongoUpdateSpy ).to.be.calledWithExactly({ parent: path, name: resource, userId: userId }, { lastUpdatedTime: Date.now() });
         });
 
         it( 'should throw an error if the destination already exists, and there is no -u or -f flag', () => {
@@ -296,8 +303,8 @@ describe( 'FS OPERATIONS:', () => {
             index.move( path + resource, userId, destination, [ ]);
 
             expect( mongoSearchSpy ).to.be.calledTwice;
-            expect( mongoSearchSpy.getCall( 0 )).to.be.calledWithExactly({ parent: path, userId: userId }, null );
-            expect( mongoSearchSpy.getCall( 1 )).to.be.calledWithExactly({ parent: destination, userId: userId }, null );
+            expect( mongoSearchSpy.getCall( 0 )).to.be.calledWithExactly({ parent: path, name: resource, userId: userId }, null );
+            expect( mongoSearchSpy.getCall( 1 )).to.be.calledWithExactly({ parent: destination, name: resource, userId: userId }, null );
             expect( mongoSearchSpy.getCall( 1 )).to.be.calledBefore( mongoUpdateSpy );
 
             expect( mongoUpdateSpy ).to.be.calledOnce;
@@ -326,12 +333,12 @@ describe( 'FS OPERATIONS:', () => {
             index.rename( path + resource, userId, name, [ ]);
 
             expect( mongoSearchSpy ).to.be.calledTwice;
-            expect( mongoSearchSpy.getCall( 0 )).to.be.calledWithExactly({ parent: path, userId: userId }, null );
-            expect( mongoSearchSpy.getCall( 1 )).to.be.calledWithExactly({ parent: path, userId: userId }, null );
+            expect( mongoSearchSpy.getCall( 0 )).to.be.calledWithExactly({ parent: path, name: resource, userId: userId }, null );
+            expect( mongoSearchSpy.getCall( 1 )).to.be.calledWithExactly({ parent: path, name: name, userId: userId }, null );
             expect( mongoSearchSpy.getCall( 1 )).to.be.calledBefore( mongoUpdateSpy );
 
             expect( mongoUpdateSpy ).to.be.calledOnce;
-            expect( mongoUpdateSpy ).to.be.calledWithExactly({ parent: path, userId: userId }, { name: name, lastUpdatedTime: Date.now() });
+            expect( mongoUpdateSpy ).to.be.calledWithExactly({ parent: path, name: resource, userId: userId }, { name: name, lastUpdatedTime: Date.now() });
         });
 
         it( 'should throw an error if the renamed resource already exists, and there is no -f flag', () => {
@@ -359,7 +366,7 @@ describe( 'FS OPERATIONS:', () => {
             expect( s3DestroySpy ).to.be.calledBefore( mongoDestroySpy );
 
             expect( mongoDestroySpy ).to.be.calledOnce;
-            expect( mongoDestroySpy ).to.be.calledWithExactly({ parent: path, userId: userId });
+            expect( mongoDestroySpy ).to.be.calledWithExactly({ parent: path, name: resource, userId: userId });
         });
 
         it( 'should return error INVALID_RESOURCE when there is no resource to destroy', () => {
