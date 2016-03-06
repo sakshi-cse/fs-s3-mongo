@@ -9,9 +9,10 @@ const bucket = new aws.S3({ params: {
     Region: process.env.AWS_REGION,
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    apiVersion: process.env.AWS_API_VERSION,
+    apiVersion: process.env.AWS_API_VERSION || 3,
 }});
 
+// TODO: investigate Bluebird for PromisifyAll
 function promisifyS3Action( action, params ) {
     return new Promise(( resolve, reject ) => {
         bucket[action]( params, ( err, res ) => {
@@ -26,14 +27,14 @@ function promisifyS3Action( action, params ) {
 }
 
 // Read content of s3 bucket by GUID
-module.exports.read = function read( GUID ) {
+module.exports.read = ( GUID ) => {
     const params = { Key: GUID };
 
     return promisifyS3Action( 'getObject', params );
 };
 
 // Write content to the s3 bucket via the GUID. Note that this always overwrites
-module.exports.write = function write( GUID, content ) {
+module.exports.write = ( GUID, content ) => {
     const params = {
         Key: GUID,
         Body: content,
@@ -43,7 +44,7 @@ module.exports.write = function write( GUID, content ) {
 };
 
 // Copy one GUID's content to another GUID
-module.exports.copy = function copy( fromGUID, toGUID ) {
+module.exports.copy = ( fromGUID, toGUID ) => {
     const params = {
         Key: toGUID,
         CopySource: fromGUID,
@@ -53,13 +54,13 @@ module.exports.copy = function copy( fromGUID, toGUID ) {
 };
 
 // Delete from s3 by GUID
-module.exports.destroy = function destroy( GUID ) {
+module.exports.destroy = ( GUID ) => {
     const params = { Key: GUID };
 
     return promisifyS3Action( 'deleteObject', params );
 };
 
 // Grab content by GUID, then compress and return to the client
-module.exports.download = function download( GUID, compressionType ) {
+module.exports.download = ( GUID, compressionType ) => {
     return Promise.reject( 'NOT_IMPLEMENTED' );
 };

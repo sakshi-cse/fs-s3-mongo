@@ -12,7 +12,6 @@ module.exports.read = function read( GUID, flags ) {
     return mongo.isDirectory( GUID )
     .then( isDirectory => {
         if ( isDirectory ) {
-            // TODO: Convert from [flags] to searchable object
             // return mongo.search({ _id: GUID }, '*', null );
 
             return Promise.reject( 'NOT_IMPLEMENTED' );
@@ -32,10 +31,22 @@ module.exports.search = function search( GUID, searchObj, orderObj, flags ) {
 module.exports.inspect = function inspect( GUID, fields ) {
     return mongo.findByGUID( GUID )
     .then( record => {
+        let toReturn = {};
+
         // If fields are specified, then only return those
-        if ( fields.length ) {
-            // TODO: filter returned fields
+        if ( fields && fields.length ) {
+            fields.forEach( element => {
+                const val = _.get( record, element );
+                if ( val ) {
+                    toReturn[element] = val;
+                }
+            });
         }
+        else {
+            toReturn = record;
+        }
+
+        return toReturn;
     });
 };
 
@@ -50,37 +61,45 @@ module.exports.download = function download( GUID, compressionType ) {
     });
 };
 
-module.exports.create = function create( GUID, mimeType, name, content, flags ) {
-    const newUUID = uuid();
+// GUID is for the parent directory
+module.exports.create = function create( GUID, type, name, content, flags ) {
+    const _id = uuid();
     let isForced = false;
 
-    return mongo.doesResourceExist( GUID )
-    .then( exists => {
+    return mongo.findByParameter({ name, parents: { $in: GUID }})
+    .then( record => {
         // If the resource exists and there is no force flag, throw error
-        if ( exists && flags.indexOf( 'f' ) === -1 ) {
+        if ( record.length && flags.indexOf( 'f' ) > -1 ) {
             throw new Error( 'RESOURCE_EXISTS' );
         }
-        else if ( exists ) {
+        else if ( record.length ) {
             isForced = true;
         }
+
+        return isForced ? record._id : _id;
     })
-    .then(() => {
-        return s3.write( newUUID, content );
+    .then(( key ) => {
+        return s3.write( key, content )
+        .then(() => Promise.resolve( key ));
     })
-    .then( data => {
+    .then( key => {
         if ( isForced ) {
-            return mongo.setLastModifiedbyGUID( GUID );
+            return mongo.setLastModifiedbyGUID( key );
         }
 
-        // TODO: add the user to the array
-        return mongo.update({
-            _id: newUUID,
-            mimeType: mimeType,
-            name: name,
+        // TODO: create mapping of extension to mimeType
+        // TODO: determine size of file
+        const mimeType = type === 'folder' ? 'folder' : name.split( '.' )[1];
+        return mongo.insertDocument({
+            _id,
+            name,
+            mimeType,
+            size: 9999,
             dateCreated: Date.now(),
             lastModified: Date.now(),
-            parents: [null],
-        });
+            parents: [GUID],
+        })
+        .exec();
     })
     .catch( utils.handleError );
 };
@@ -108,27 +127,45 @@ module.exports.copy = function copy( resourceGUID, destinationGUID, flags ) {
 module.exports.update = function update( GUID, content, flags ) {
     let isForced = false;
 
+    // First check to see if the resource exists, and check the -f flag if needed
     return mongo.doesResourceExist( GUID )
     .then( exists => {
-        // If the resource exists and there is no force flag, throw error
-        if ( !exists && flags.indexOf( 'f' ) === -1 ) {
+        if ( !exists && flags.indexOf( 'f' ) > -1 ) {
             throw new Error( 'RESOURCE_NOT_FOUND' );
         }
-        else if ( !exists ) {
+        else if ( exists ) {
             isForced = true;
         }
+
+        return mongo.isDirectory( GUID );
     })
-    .then(() => {
+    .then(( isDirectory ) => {
+        if ( isDirectory ) {
+            throw new Error( 'INVALID_RESOUCE_TYPE' );
+        }
+
         return s3.write( GUID, content );
     })
-    .then( data => {
+    .then(( ) => {
+        // TODO: create mapping of extension to mimeType (module: mime)
+        // TODO: determine size of file
         if ( isForced ) {
-            // TODO: insert the entire record into mongo
+            const mimeType = name.split( '.' )[1];
+            return mongo.insertDocument({
+                _id: uuid(),
+                name: name,
+                mimeType: mimeType,
+                size: 9999,
+                dateCreated: Date.now(),
+                lastModified: Date.now(),
+                // parents: [userId],
+            })
+            .exec();
         }
 
         return mongo.setLastModifiedbyGUID( GUID );
     })
-    .catch( utils.handleError );
+    .catch( err => utils.handleError( err ));
 };
 
 module.exports.move = function move( resourceGUID, destinationGUID, flags ) {
@@ -142,8 +179,15 @@ module.exports.rename = function rename( GUID, name, flags ) {
 };
 
 module.exports.destroy = function destroy( GUID ) {
-    return s3.destroy( GUID )
-    .then(() => {
+    return mongo.isDirectory( GUID )
+    .then( isDirectory => {
+        if ( isDirectory ) {
+            return Promise.reject( 'NOT_IMPLEMENTED' );
+        }
+
+        return s3.destroy( GUID );
+    })
+    .then(( ) => {
         return mongo.deleteByGUID( GUID );
     })
     .catch( utils.handleError );

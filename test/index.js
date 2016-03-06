@@ -2,57 +2,64 @@
 
 /* eslint-env mocha */
 /* eslint no-unused-expressions: 0 */
+/* eslint no-unused-vars: 0 */
 
 const chai = require( 'chai' );
 const expect = chai.expect;
 const chaiaspromised = require( 'chai-as-promised' );
 const sinonchai = require( 'sinon-chai' );
-// const sinon = require( 'sinon' );
+const sinon = require( 'sinon' );
 
 const index = require( '../src/index.js' );
-// const s3 = require( '../src/s3.js' );
-// const mongo = require( '../src/mongo.js' );
+const s3 = require( '../src/s3.js' );
+const mongo = require( '../src/mongo.js' );
 
 chai.use( sinonchai );
 chai.use( chaiaspromised );
 
-// const userId = 12345;
+const userId = 12345;
 
 // Declare spies here to prevent rewrapping them
-// let s3ReadSpy;
-// let s3WriteSpy;
-// let s3CopySpy;
-// let s3DestroySpy;
-// let s3DownloadSpy;
-// let mongoInsertSpy;
-// let mongoSearchSpy;
-// let mongoUpdateSpy;
-// let mongoDestroySpy;
-// let mongoGetGUIDSpy;
-//
-// beforeEach(() => {
-//     s3ReadSpy = sinon.spy( s3, 'read' );
-//     s3WriteSpy = sinon.spy( s3, 'write' );
-//     s3CopySpy = sinon.spy( s3, 'copy' );
-//     s3DestroySpy = sinon.spy( s3, 'destroy' );
-//     s3DownloadSpy = sinon.spy( s3, 'download' );
-//     mongoInsertSpy = sinon.spy( mongo, 'insert' );
-//     mongoSearchSpy = sinon.spy( mongo, 'search' );
-//     mongoUpdateSpy = sinon.spy( mongo, 'update' );
-//     mongoDestroySpy = sinon.spy( mongo, 'destroy' );
-//     mongoGetGUIDSpy = sinon.spy( mongo, 'getGUID' );
-// });
-//
-// const s3Actions = [ 'read', 'write', 'copy', 'destroy', 'download' ];
-// const mongoActions = [ 'insert', 'search', 'update', 'destroy', 'getGUID' ];
-// afterEach(() => {
-//     s3Actions.forEach(( action ) => {
-//         s3[action].restore();
-//     });
-//     mongoActions.forEach(( action ) => {
-//         mongo[action].restore();
-//     });
-// });
+let s3ReadSpy;
+let s3WriteSpy;
+let s3CopySpy;
+let s3DestroySpy;
+let s3DownloadSpy;
+let insertSpy;
+let findByParameterSpy;
+let deleteByGUIDSpy;
+let setLastModifiedbyGUIDSpy;
+let setNameByGUIDSpy;
+let updateByGUIDSpy;
+let findByGUIDSpy;
+let doesResourceExistSpy;
+let isDirectorySpy;
+
+beforeEach(() => {
+    s3ReadSpy = sinon.spy( s3, 'read' );
+    s3WriteSpy = sinon.spy( s3, 'write' );
+    s3CopySpy = sinon.spy( s3, 'copy' );
+    s3DestroySpy = sinon.spy( s3, 'destroy' );
+    s3DownloadSpy = sinon.spy( s3, 'download' );
+
+    // insertSpy = sinon.spy( mongo, 'insert' );
+    findByParameterSpy = sinon.spy( mongo, 'findByParameter' );
+    deleteByGUIDSpy = sinon.spy( mongo, 'deleteByGUID' );
+    setLastModifiedbyGUIDSpy = sinon.spy( mongo, 'setLastModifiedbyGUID' );
+    setNameByGUIDSpy = sinon.spy( mongo, 'setNameByGUID' );
+    updateByGUIDSpy = sinon.spy( mongo, 'updateByGUID' );
+    findByGUIDSpy = sinon.spy( mongo, 'findByGUID' );
+    doesResourceExistSpy = sinon.spy( mongo, 'doesResourceExist' );
+    isDirectorySpy = sinon.spy( mongo, 'isDirectory' );
+});
+
+const s3Actions = [ 'read', 'write', 'copy', 'destroy', 'download' ];
+const mongoActions = [ /* 'insert', */ 'findByParameter', 'deleteByGUID', 'setLastModifiedbyGUID', 'setNameByGUID',
+                        'updateByGUID', 'findByGUID', 'doesResourceExist', 'isDirectory' ];
+afterEach(() => {
+    s3Actions.forEach( action => s3[action].restore());
+    mongoActions.forEach( action => mongo[action].restore());
+});
 
 describe( 'Top-level FS API', () => {
     it( 'should expose read', () => {
@@ -100,297 +107,134 @@ describe( 'Top-level FS API', () => {
     });
 });
 
-// describe( 'FS OPERATIONS:', () => {
-//     describe( 'read()', () => {
-//         it( 'should return INVALID_RESOURCE if passed an invalid path', () => {
-//
-//         });
-//
-//         it( 'should call into mongo.getGUID(), then s3.read() when given a path', () => {
-//             const path = '/valid/path/here/';
-//             const resource = 'test.txt';
-//
-//             index.read( path + resource, userId );
-//
-//             expect( mongoGetGUIDSpy ).to.be.calledOnce;
-//             expect( mongoGetGUIDSpy ).to.be.calledWithExactly( path + resource, userId );
-//             expect( mongoGetGUIDSpy ).to.be.calledBefore( s3ReadSpy );
-//
-//             expect( s3ReadSpy ).to.be.calledOnce;
-//             expect( s3ReadSpy ).to.be.calledWithExactly( mongoGetGUIDSpy.returnValues[ 0 ]);
-//         });
-//     });
-//
-//     describe( 'search() ', () => {
-//         it( 'should return INVALID_RESOURCE if passed an invalid path', () => {
-//
-//         });
-//
-//
-//         it( 'should call into mongo.search()', () => {
-//             const path = '/valid/path/here/';
-//             const query = '*';
-//             const sort = null;
-//             const flags = [];
-//
-//             index.search( path, userId, query, sort, flags );
-//
-//             expect( mongoSearchSpy ).to.be.calledOnce;
-//             expect( mongoSearchSpy ).to.be.calledWithExactly({ parent: path, userId: userId }, null );
-//         });
-//
-//         it( 'should return an empty array when there are no matches', () => {
-//             expect( false ).to.be.true;
-//         });
-//
-//         it( 'should return an array of resource names which match the query', () => {
-//             expect( false ).to.be.true;
-//         });
-//
-//         it( 'should default to shallow searching', () => {
-//             expect( false ).to.be.true;
-//         });
-//
-//         it( 'should allow deep searching when passed in the -r flag', () => {
-//             expect( false ).to.be.true;
-//         });
-//     });
-//
-//     describe( 'inspect() ', () => {
-//         it( 'should call into mongo.search()', () => {
-//             const path = '/valid/path/here/';
-//             const resource = 'test.txt';
-//             const fields = null;
-//
-//             index.inspect( path + resource, userId, fields );
-//
-//             expect( mongoSearchSpy ).to.be.calledOnce;
-//             expect( mongoSearchSpy ).to.be.calledWithExactly({ parent: path, name: resource, userId: userId }, null );
-//         });
-//
-//         it( 'should return all metadata fields by default', () => {
-//             expect( false ).to.be.true;
-//         });
-//
-//         it( 'should return only the specified fields, if given a fields array', () => {
-//             expect( false ).to.be.true;
-//         });
-//     });
-//
-//     describe( 'download() ', () => {
-//         it( 'should call into mongo.getGUID(), then s3.download()', () => {
-//             const path = '/valid/path/here/';
-//             const resource = 'test.txt';
-//             const compressionType = 'zip';
-//
-//             index.download( path + resource, userId, compressionType );
-//
-//             expect( mongoGetGUIDSpy ).to.be.calledOnce;
-//             expect( mongoGetGUIDSpy ).to.be.calledWithExactly( path + resource, userId );
-//             expect( mongoGetGUIDSpy ).to.be.calledBefore( s3DownloadSpy );
-//
-//             expect( s3DownloadSpy ).to.be.calledOnce;
-//             expect( s3DownloadSpy ).to.be.calledWithExactly( mongoGetGUIDSpy.returnValues[0], 'zip' );
-//             expect( s3DownloadSpy ).to.be.calledAfter( mongoGetGUIDSpy );
-//         });
-//     });
-//
-//     // TODO: Determine the mongo implementation for adding a resource
-//     describe( 'create() ', () => {
-//         it( 'should call into mongo.getGUID(), s3.write(), then mongo.insert()', () => {
-//             const path = '/valid/path/here/';
-//             const resource = 'test.txt';
-//             const content = 'this is a content string';
-//
-//             index.create( path + resource, userId, content, [ ]);
-//
-//             expect( mongoGetGUIDSpy ).to.be.calledOnce;
-//             expect( mongoGetGUIDSpy ).to.be.calledWithExactly( path + resource, userId );
-//             expect( mongoGetGUIDSpy ).to.be.calledBefore( s3WriteSpy );
-//
-//             expect( s3WriteSpy ).to.be.calledOnce;
-//             expect( s3WriteSpy ).to.be.calledWithExactly( mongoGetGUIDSpy.returnValues[0], content );
-//             expect( s3WriteSpy ).to.be.calledBefore( mongoInsertSpy );
-//
-//             expect( mongoInsertSpy ).to.be.calledOnce;
-//             expect( mongoInsertSpy ).to.be.calledWithExactly({ TODO: 'TODO' });
-//             expect( mongoInsertSpy ).to.be.calledAfter( s3WriteSpy );
-//         });
-//
-//         it( 'should by default return an error when attempting to overwrite an existing resource', () => {
-//             expect( false ).to.be.true;
-//         });
-//
-//         it( 'should overwriting an existing resource when passed the force flag', () => {
-//             expect( false ).to.be.true;
-//         });
-//     });
-//
-//     // TODO: determine bulk work flow
-//     describe( 'bulk() ', () => {
-//         it( 'TODO: all of it', () => {
-//             expect( false ).to.be.true;
-//         });
-//     });
-//
-//     // TODO: Determine the mongo implementation for copying a resource
-//     describe( 'copy() ', () => {
-//         it( 'should call into mongo.getGUID() for the resource, mongo.search() for the destination, then mongo.insert(), then mongo.update', () => {
-//             const path = '/valid/path/here/';
-//             const resource = 'test.txt';
-//             const destination = '/new/valid/path/here/';
-//             const newGUID = 'abcde12345';
-//
-//             index.copy( path + resource, userId, destination, [ ]);
-//
-//             expect( mongoGetGUIDSpy ).to.be.calledOnce;
-//             expect( mongoGetGUIDSpy ).to.be.calledWithExactly( path + resource, userId );
-//             expect( mongoGetGUIDSpy ).to.be.calledBefore( mongoSearchSpy );
-//
-//             expect( mongoSearchSpy ).to.be.calledOnce;
-//             expect( mongoSearchSpy ).to.be.calledWithExactly({ parent: destination, name: resource, userId: userId }, null );
-//             expect( mongoSearchSpy ).to.be.calledBefore( s3CopySpy );
-//
-//             expect( s3CopySpy ).to.be.calledOnce;
-//             expect( s3CopySpy ).to.be.calledWithExactly( mongoGetGUIDSpy.returnValues[0], newGUID );
-//             expect( s3CopySpy ).to.be.calledBefore( mongoInsertSpy );
-//
-//             expect( mongoInsertSpy ).to.be.calledOnce;
-//             expect( mongoInsertSpy ).to.be.calledWithExactly({ TODO: 'TODO' });
-//             expect( mongoInsertSpy ).to.be.calledBefore( mongoUpdateSpy );
-//
-//             expect( mongoUpdateSpy ).to.be.calledOnce;
-//             expect( mongoUpdateSpy ).to.be.calledWithExactly({ parent: path, name: resource, userId: userId }, { lastUpdatedTime: Date.now() });
-//         });
-//
-//         it( 'should throw an error if the destination already exists, and there is no -u or -f flag', () => {
-//             expect( false ).to.be.true;
-//         });
-//
-//         it( 'should generate unique name if the destination already exists, and the -u flag is passed in', () => {
-//             expect( false ).to.be.true;
-//         });
-//
-//         it( 'should overwrite the existing resource if it already exists, and the -f flag is passed in', () => {
-//             expect( false ).to.be.true;
-//         });
-//
-//         it( 'should copy directories recursively, by default', () => {
-//
-//         });
-//     });
-//
-//     it( 'update() ', () => {
-//         it( 'should call into mongo.getGUID(), s3.write(), then mongo.update()', () => {
-//             const path = '/valid/path/here/';
-//             const resource = 'test.txt';
-//             const content = 'this is a content string';
-//
-//             index.update( path + resource, userId, content, [ ]);
-//
-//             expect( mongoGetGUIDSpy ).to.be.calledOnce;
-//             expect( mongoGetGUIDSpy ).to.be.calledWithExactly( path + resource, userId );
-//             expect( mongoGetGUIDSpy ).to.be.calledBefore( s3WriteSpy );
-//
-//             expect( s3WriteSpy ).to.be.calledOnce;
-//             expect( s3WriteSpy ).to.be.calledWithExactly( mongoGetGUIDSpy.returnValues[0], content );
-//             expect( s3WriteSpy ).to.be.calledBefore( mongoUpdateSpy );
-//
-//             expect( mongoUpdateSpy ).to.be.calledOnce;
-//             expect( mongoUpdateSpy ).to.be.calledWithExactly({ parent: path, userId: userId }, { lastUpdatedTime: Date.now() });
-//         });
-//
-//         it( 'should by default return an error when attempting to update a nonexistant resource', () => {
-//
-//         });
-//
-//         it( 'should create a new resource if one does not exist, when passed the -f flag', () => {
-//
-//         });
-//     });
-//
-//     // TODO: Determine the mongo implementation for copying a resource
-//     describe( 'move() ', () => {
-//         it( 'should call into mongo.search() for the resource and for the destination, then mongo.update()', () => {
-//             const path = '/valid/path/here/';
-//             const resource = 'test.txt';
-//             const destination = '/new/valid/path/here/';
-//
-//             index.move( path + resource, userId, destination, [ ]);
-//
-//             expect( mongoSearchSpy ).to.be.calledTwice;
-//             expect( mongoSearchSpy.getCall( 0 )).to.be.calledWithExactly({ parent: path, name: resource, userId: userId }, null );
-//             expect( mongoSearchSpy.getCall( 1 )).to.be.calledWithExactly({ parent: destination, name: resource, userId: userId }, null );
-//             expect( mongoSearchSpy.getCall( 1 )).to.be.calledBefore( mongoUpdateSpy );
-//
-//             expect( mongoUpdateSpy ).to.be.calledOnce;
-//             expect( mongoUpdateSpy ).to.be.calledWithExactly({ parent: path, userId: userId }, { path: destination, lastUpdatedTime: Date.now() });
-//         });
-//
-//         it( 'should throw an error if the destination already exists, and there is no -f flag', () => {
-//             expect( false ).to.be.true;
-//         });
-//
-//         it( 'should overwrite the existing resource if it already exists, and the -f flag is passed in', () => {
-//             expect( false ).to.be.true;
-//         });
-//
-//         it( 'should move directories recursively by default', () => {
-//             expect( false ).to.be.true;
-//         });
-//     });
-//
-//     describe( 'rename() ', () => {
-//         it( 'should call into mongo.search() for the resource and for renamed version, then mongo.update()', () => {
-//             const path = '/valid/path/here/';
-//             const resource = 'test.txt';
-//             const name = 'renamed.txt';
-//
-//             index.rename( path + resource, userId, name, [ ]);
-//
-//             expect( mongoSearchSpy ).to.be.calledTwice;
-//             expect( mongoSearchSpy.getCall( 0 )).to.be.calledWithExactly({ parent: path, name: resource, userId: userId }, null );
-//             expect( mongoSearchSpy.getCall( 1 )).to.be.calledWithExactly({ parent: path, name: name, userId: userId }, null );
-//             expect( mongoSearchSpy.getCall( 1 )).to.be.calledBefore( mongoUpdateSpy );
-//
-//             expect( mongoUpdateSpy ).to.be.calledOnce;
-//             expect( mongoUpdateSpy ).to.be.calledWithExactly({ parent: path, name: resource, userId: userId }, { name: name, lastUpdatedTime: Date.now() });
-//         });
-//
-//         it( 'should throw an error if the renamed resource already exists, and there is no -f flag', () => {
-//             expect( false ).to.be.true;
-//         });
-//
-//         it( 'should overwrite the existing renamed resource if it already exists, and the -f flag is passed in', () => {
-//             expect( false ).to.be.true;
-//         });
-//     });
-//
-//     describe( 'destroy() ', () => {
-//         it( 'should call into mongo.getGUID(), s3.destroy() then mongo.destroy()', () => {
-//             const path = '/valid/path/here/';
-//             const resource = 'test.txt';
-//
-//             index.destroy( path + resource, userId );
-//
-//             expect( mongoGetGUIDSpy ).to.be.calledOnce;
-//             expect( mongoGetGUIDSpy ).to.be.calledWithExactly( path + resource, userId );
-//             expect( mongoGetGUIDSpy ).to.be.calledBefore( s3DestroySpy );
-//
-//             expect( s3DestroySpy ).to.be.calledOnce;
-//             expect( s3DestroySpy ).to.be.calledWithExactly( mongoGetGUIDSpy.returnValues[ 0 ]);
-//             expect( s3DestroySpy ).to.be.calledBefore( mongoDestroySpy );
-//
-//             expect( mongoDestroySpy ).to.be.calledOnce;
-//             expect( mongoDestroySpy ).to.be.calledWithExactly({ parent: path, name: resource, userId: userId });
-//         });
-//
-//         it( 'should return error INVALID_RESOURCE when there is no resource to destroy', () => {
-//             expect( false ).to.be.true;
-//         });
-//
-//         it( 'should destroy directories recursively by default', () => {
-//             expect( false ).to.be.true;
-//         });
-//     });
-// });
+describe( 'FS OPERATIONS:', () => {
+    describe( 'read()', () => {
+        it( 'should return INVALID_RESOURCE if passed an invalid GUID', () => {
+            const GUID = '00000';
+
+            return expect( index.read( GUID )).to.be.rejected
+                .and.eventually.equal( 'INVALID_RESOURCE' );
+        });
+
+        it( 'should return NOT_IMPLEMENTED if passed a valid GUID for a folder', () => {
+            const GUID = '23456';
+
+            return expect( index.read( GUID )).to.be.rejected
+                .and.eventually.equal( 'NOT_IMPLEMENTED' );
+        });
+
+        it( 'should call into mongo.isDirectory() then s3.read() when passed a valid GUID for a file', () => {
+            const GUID = '12345';
+
+            index.read( GUID );
+
+            expect( isDirectorySpy ).to.be.calledOnce;
+            expect( isDirectorySpy ).to.be.calledWithExactly( GUID );
+            expect( isDirectorySpy ).to.be.calledBefore( s3ReadSpy );
+
+            expect( s3ReadSpy ).to.be.calledOnce;
+            expect( s3ReadSpy ).to.be.calledWithExactly( GUID );
+        });
+
+        it( 'should return data for a valid file GUID', () => {
+            const GUID = '12345';
+
+            return expect( index.read( GUID )).to.be.resolved
+                .and.eventually.equal( 'this is the body.' );
+        });
+    });
+
+    describe( 'create()', () => {
+        it( 'should return RESOURCE_EXISTS if a resource already exists there and no force flag is passed in', () => {
+            const GUID = '12345';
+            const type = 'file';
+            const name = 'a.txt';
+            const content = 'this is the body.';
+
+            return expect( index.create( GUID, type, name, content )).to.be.rejected
+                .and.eventually.equal( 'RESOURCE_EXISTS' );
+        });
+
+        it( 'should call into mongo.findByParameter(), s3.write(), then mongo.insert() with a valid GUID and a new name', () => {
+            const GUID = '12345';
+            const type = 'file';
+            const name = 'newname.txt';
+            const content = 'this is the body.';
+
+            index.create( GUID, type, name, content );
+
+            expect( findByParameterSpy ).to.be.calledOnce;
+            expect( findByParameterSpy ).to.be.calledWithExactly({ name, parents: { $in: GUID }});
+            expect( findByParameterSpy ).to.be.calledBefore( s3WriteSpy );
+
+            expect( s3WriteSpy ).to.be.calledOnce;
+            expect( s3WriteSpy ).to.be.calledBefore( insertSpy );
+
+            expect( insertSpy ).to.be.calledOnce;
+        });
+
+        it( 'should call into mongo.findByParameter(), s3.write(), then mongo.setLastModifiedbyGUID() with a valid GUID, existing name, and the force flag', () => {
+
+        });
+
+        it( 'should overwrite an existing GUID and update the lastModified if passed the -f flag', () => {
+
+        });
+
+        it( 'should write to s3 and add an entry in mongo if given a valid GUID and new name', () => {
+
+        });
+    });
+
+    describe( 'Update()', () => {
+        it( 'should return RESOURCE_NOT_FOUND if there is no matching resource', () => {
+            const GUID = '00000';
+            const content = 'this is the body.';
+
+            return expect( index.update( GUID, content )).to.be.rejected
+                .and.eventually.equal( 'RESOURCE_NOT_FOUND' );
+        });
+
+        it( 'should call into mongo.doesResourceExist(), mongo.isDirectory(), s3.write(), then mongo.setLastModifiedbyGUID() with a valid GUID', () => {
+
+        });
+
+        it( 'should write to s3 and update the last modified in mongo if given a valid GUID', () => {
+
+        });
+
+        it( 'should call into mongo.doesResourceExist(), mongo.isDirectory(), s3.write(), then mongo.insert() with a valid GUID', () => {
+
+        });
+
+        it( 'should create a new resource if given a valid GUID and new name, and passed the -f flag', () => {
+
+        });
+    });
+
+    describe( 'destroy()', () => {
+        it( 'should reject with RESOURCE_NOT_FOUND if given an invalid GUID', () => {
+            const GUID = '00000';
+
+            expect( index.destroy( GUID )).to.be.rejected
+                .and.eventually.equal( 'RESOURCE_NOT_FOUND' );
+        });
+
+        it( 'should call into s3.destroy(), then deleteByGUID() when given a valid GUID', () => {
+            const GUID = '12345';
+
+            index.destroy( GUID );
+
+            expect( s3DestroySpy ).to.be.calledOnce;
+            expect( s3DestroySpy ).to.be.calledWithExactly( GUID );
+            expect( s3DestroySpy ).to.be.calledBefore( deleteByGUIDSpy );
+
+            expect( deleteByGUIDSpy ).to.be.calledOnce;
+            expect( deleteByGUIDSpy ).to.be.calledWithExactly( GUID );
+        });
+
+        it( 'should remove the s3 entry and the mongodb record when given a valid GUID', () => {
+
+        });
+    });
+});
