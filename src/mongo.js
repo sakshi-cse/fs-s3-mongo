@@ -2,54 +2,50 @@
 
 /* eslint no-unused-vars: 0 */
 
-const File = require( '../schemas/file.js' );
+const utils = require( './utils.js' );
 const Meta = require( '../schemas/metadata.js' );
 
+// exports = module.exports;
+
 // Insert a document
-module.exports.insert = function insert( toInsert ) {
-    return Promise.reject( 'NOT_IMPLEMENTED' );
-};
+module.exports.insert = Meta.insert;
 
 // Search for a document, with an optional sorting parameter
-module.exports.search = function search( toMatch, toSort ) {
-    return Promise.reject( 'NOT_IMPLEMENTED' );
+module.exports.findByParameter = Meta.find;
+
+// Delete document by GUID
+module.exports.deleteByGUID = Meta.findByIdAndRemove;
+
+// Update last modified timestamp per GUID
+module.exports.setLastModifiedbyGUID = ( GUID ) => module.exports.updateByGUID( GUID, { lastModified: Date.now() });
+
+// Update the name per GUID
+module.exports.setNameByGUID = ( GUID, name ) => module.exports.updateByGUID( GUID, { name, lastModified: Date.now() });
+
+// Generalized update function by GUID
+module.exports.updateByGUID = Meta.findByIdAndUpdate;
+
+// Return mongo document by GUID. Throws error if no document is found
+module.exports.findByGUID = Meta.findById;
+
+// Returns a boolean parameter to the next then() block
+module.exports.doesResourceExist = function doesResourceExist( GUID ) {
+    return exports.findByGUID( GUID )
+    .exec()
+    .then( record => !!record )
+    .catch( utils.handleError );
 };
 
-// Update any matched documents
-module.exports.update = function update( toMatch, toUpdate ) {
-    return Promise.reject( 'NOT_IMPLEMENTED' );
-};
+// Returns a boolean parameter to the next then() block
+module.exports.isDirectory = function isDirectory( GUID ) {
+    exports.findByGUID( GUID )
+    .exec()
+    .then( record => {
+        if ( !record ) {
+            throw new Error( 'RESOURCE_NOT_FOUND' );
+        }
 
-// Delete any matched documents
-module.exports.destroy = function destroy( toMatch ) {
-    return Promise.reject( 'NOT_IMPLEMENTED' );
-};
-
-// Resolve a fullPath and userId to a GUID
-module.exports.getGUID = function getGUID( fullPath, userId ) {
-    return new Promise(( resolve, reject ) => {
-        File.findOne({ $and: [{ parent: fullPath }, { userId: userId }]}, ( err, obj ) => {
-            if ( err ) {
-                reject( 'INVALID_RESOURCE_PATH' );
-            }
-            else {
-                resolve( obj.metaDataId );
-            }
-        });
+        return record.mimeType === 'folder';
     })
-
-    // Grab the metaData doc by the ID
-    .then(( id ) => {
-        Meta.findOne({ _id: id }, ( err, obj ) => {
-            if ( err ) {
-                throw new Error( 'INVALID_RESOURCE' );
-            }
-            return obj;
-        });
-    })
-
-    // Return null if there isn't an associated GUID
-    .catch(( ) => {
-        return null;
-    });
+    .catch( utils.handleError );
 };

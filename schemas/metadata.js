@@ -1,15 +1,17 @@
 'use strict';
 
 const mongoose = require( 'mongoose' );
+mongoose.Promise = global.Promise;
 const Schema = mongoose.Schema;
 
 const metadataSchema = new Schema({
-    guid: String,         // s3 guid
-    mimeType: String,     // http://www.freeformatter.com/mime-types-list.html (includes folder type)
-    size: Number,         // in bytes
+    _id: String,
+    name: String,
+    mimeType: String,
+    size: Number,
     dateCreated: Date,
     lastModified: Date,
-    children: [String],
+    parents: [String],
 });
 
 // and attach it to our model
