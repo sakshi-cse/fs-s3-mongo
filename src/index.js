@@ -2,22 +2,24 @@
 
 /* eslint no-unused-vars: 0 */
 
-const mongo = require( './mongo.js' );
 const s3 = require( './s3.js' );
 const utils = require( './utils.js' );
 const uuid = require( 'uuid-v4' );
 const _ = require( 'lodash' );
+const File = require( './schemas/fileSchema.js' );
+const mongo = require( './mongo.js' );
 
-module.exports.read = function read( GUID, flags ) {
+module.exports.schema = File;
+
+module.exports.alias = mongo.alias;
+
+module.exports.read = ( GUID, flags ) => {
     return mongo.isDirectory( GUID )
     .then( isDirectory => {
         if ( isDirectory ) {
-            // return mongo.search({ _id: GUID }, '*', null );
-
-            return Promise.reject( 'NOT_IMPLEMENTED' );
+            return Promise.reject( 'INVALID_RESOURCE' );
         }
-
-        return s3.read( GUID );
+        return `/${GUID}`;
     })
     .catch( utils.handleError );
 };

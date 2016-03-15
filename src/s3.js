@@ -1,7 +1,5 @@
 'use strict';
 
-/* eslint no-unused-vars: 0 */
-
 const aws = require( 'aws-sdk' );
 
 const bucket = new aws.S3({ params: {
@@ -25,13 +23,6 @@ function promisifyS3Action( action, params ) {
         });
     });
 }
-
-// Read content of s3 bucket by GUID
-module.exports.read = ( GUID ) => {
-    const params = { Key: GUID };
-
-    return promisifyS3Action( 'getObject', params );
-};
 
 // Write content to the s3 bucket via the GUID. Note that this always overwrites
 module.exports.write = ( GUID, content ) => {
@@ -61,6 +52,6 @@ module.exports.destroy = ( GUID ) => {
 };
 
 // Grab content by GUID, then compress and return to the client
-module.exports.download = ( GUID, compressionType ) => {
+module.exports.download = () => {
     return Promise.reject( 'NOT_IMPLEMENTED' );
 };
