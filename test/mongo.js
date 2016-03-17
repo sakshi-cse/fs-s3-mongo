@@ -1,4 +1,3 @@
-
 'use strict';
 
 const chai = require( 'chai' );
@@ -45,17 +44,19 @@ describe( 'mongo', () => {
         return File.remove({}).exec();
     });
 
-    describe( '.findByGuid()', function() {
+    // TODO test flags
+    describe( '.find()', function() {
         it( 'should resolve with a valid resource', function() {
-            return mongo.findByGuid( 'TEST-GUID-level3' )
+            return mongo.find( 'TEST-GUID-level3' )
             .then( resource => expect( testDocuments.level3.equals( resource )).to.be.true );
         });
 
         it( 'should reject with INVALID_RESOURCE for an invalid resource', function() {
-            return expect( mongo.findByGuid( 'DOES-NOT-EXIST' )).to.be.rejectedWith( 'INVALID_RESOURCE' );
+            return expect( mongo.find( 'DOES-NOT-EXIST' )).to.be.rejectedWith( 'INVALID_RESOURCE' );
         });
     });
 
+    // TODO test flags
     describe( '.isDirectory()', () => {
         it( 'should resolve with true if resource has a mimeType of folder', function() {
             return expect( mongo.isDirectory( rootId )).to.eventually.be.true;
@@ -70,6 +71,7 @@ describe( 'mongo', () => {
         });
     });
 
+    // TODO test flags
     describe( '.alias()', function() {
         it( 'should resolve with guid for a valid resource', function() {
             return expect( mongo.alias( 'level1/level2/level3/test.txt', rootId )).to.eventually.equal( testGuidPrefix + 'test.txt' );
@@ -80,13 +82,17 @@ describe( 'mongo', () => {
         });
     });
 
+    // TODO test file creation
+    // TODO test errors
+    // TODO test flags
     describe( '.create()', function() {
         it( 'should create the file record and resolve', function() {
             const parentId = rootId;
             const mimeType = 'folder';
             const name = 'media';
             const size = 100;
-            return mongo.create( parentId, mimeType, name, size )
+            const id = 'NEW-GUID';
+            return mongo.create( parentId, id, mimeType, name, size )
             .then( file => {
                 expect( file ).to.have.property( '_id' );
                 expect( file ).to.have.property( 'mimeType' );
@@ -96,7 +102,7 @@ describe( 'mongo', () => {
                 expect( file ).to.have.property( 'parents' );
                 expect( file ).to.have.property( 'name' );
 
-                expect( file._id ).to.be.a.string;
+                expect( file._id ).to.equal( id );
                 expect( file.mimeType ).to.equal( mimeType );
                 expect( file.size ).to.equal( size );
                 expect( file.dateCreated ).to.be.an.instanceOf( Date );
@@ -107,6 +113,8 @@ describe( 'mongo', () => {
         });
     });
 
+    // TODO test errors
+    // TODO test flags
     describe( '.destroy()', function() {
         it( 'should destroy the resource', function() {
             return mongo.destroy( 'TEST-GUID-test.txt' )
@@ -116,14 +124,23 @@ describe( 'mongo', () => {
         });
 
         it( 'should destroy all children resources', function() {
-            mongo.destroy( 'TEST-GUID-level3' )
+            return mongo.destroy( 'TEST-GUID-level3' )
             .then(() => Promise.all([
                 expect( File.findOne({ _id: 'TEST-GUID-level3' }).exec()).to.eventually.be.null,
                 expect( File.findOne({ _id: 'TEST-GUID-test.txt' }).exec()).to.eventually.be.null,
             ]));
         });
+
+        it( 'should resolve with an array of destroyed resources', function() {
+            return expect( mongo.destroy( 'TEST-GUID-level2' )).to.eventually.deep.equal([
+                'TEST-GUID-test.txt',
+                'TEST-GUID-level3',
+                'TEST-GUID-level2',
+            ]);
+        });
     });
 
+    // TODO refactor
     describe.skip( '.copy()', function() {
         // rootId, old path, new path
         const oldPath = '/level1/level2/level3/test.txt';
@@ -142,6 +159,7 @@ describe( 'mongo', () => {
         });
     });
 
+    // TODO refactor
     describe.skip( '.move()', function() {
         // a rename is also a move
         // rootId, old path, new path
