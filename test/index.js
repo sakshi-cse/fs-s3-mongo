@@ -4,7 +4,7 @@ const chai = require( 'chai' );
 const chaiaspromised = require( 'chai-as-promised' );
 const mime = require( 'mime' );
 const s3Mongo = require( '../src/index.js' );
-const File = require( '../src/schemas/fileSchema.js' );
+const File = require( '../src/schema.js' );
 
 const expect = chai.expect;
 

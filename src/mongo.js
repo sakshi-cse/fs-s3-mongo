@@ -1,9 +1,9 @@
 'use strict';
 
-const File = require( '../src/schemas/fileSchema.js' );
 const mongoose = require( 'mongoose' );
 const R = require( 'ramda' );
 const error = require( './error.js' );
+const File = require( './schema.js' );
 const conn = mongoose.connection;
 mongoose.Promise = Promise;
 
