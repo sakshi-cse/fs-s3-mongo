@@ -42,6 +42,8 @@ describe( 'mongo', () => {
         return File.remove({}).exec();
     });
 
+    // TODO test .connect()
+
     // TODO test flags
     describe( '.find()', function() {
         it( 'should resolve with a valid resource', function() {
@@ -53,6 +55,9 @@ describe( 'mongo', () => {
             return expect( mongo.find( 'DOES-NOT-EXIST' )).to.be.rejectedWith( 'INVALID_RESOURCE' );
         });
     });
+
+    // TODO test .findChildren()
+    // TODO test .findChild()
 
     // TODO test flags
     describe( '.isDirectory()', () => {
@@ -68,6 +73,8 @@ describe( 'mongo', () => {
             return expect( mongo.isDirectory( 'DOES-NOT-EXIST' )).to.be.rejectedWith( 'INVALID_RESOURCE' );
         });
     });
+
+    // TODO test .update()
 
     // TODO test flags
     describe( '.alias()', function() {
