@@ -112,3 +112,6 @@ exports.destroy = function destroy( id ) {
     ])
     .then( R.flatten );
 };
+
+// TODO write .copy()
+// TODO wrtie .move()

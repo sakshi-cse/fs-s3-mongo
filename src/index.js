@@ -55,19 +55,22 @@ const destroy = R.curry(( s3, id ) => {
     .then( s3.destroy );
 });
 
-
+// TODO
 const search = R.curry(() => {
     return error.NOT_IMPLEMENTED;
 });
 
+// TODO
 const download = R.curry(() => {
     return error.NOT_IMPLEMENTED;
 });
 
+// TODO
 const copy = R.curry(() => {
     return error.NOT_IMPLEMENTED;
 });
 
+// TODO
 const move = R.curry(() => {
     return error.NOT_IMPLEMENTED;
 });
