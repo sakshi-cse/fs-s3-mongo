@@ -3,12 +3,10 @@
 const chai = require( 'chai' );
 const expect = chai.expect;
 const chaiaspromised = require( 'chai-as-promised' );
-const sinonchai = require( 'sinon-chai' );
 const mime = require( 'mime' );
 const mongo = require( '../src/mongo.js' );
 const File = require( '../src/schemas/fileSchema.js' );
 
-chai.use( sinonchai );
 chai.use( chaiaspromised );
 
 const testGuidPrefix = 'TEST-GUID-';

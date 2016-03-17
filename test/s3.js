@@ -3,11 +3,9 @@
 const chai = require( 'chai' );
 const expect = chai.expect;
 const chaiaspromised = require( 'chai-as-promised' );
-const sinonchai = require( 'sinon-chai' );
 const fs = require( 'fs' );
 const s3Module = require( '../src/s3.js' );
 
-chai.use( sinonchai );
 chai.use( chaiaspromised );
 
 describe( 's3', () => {
