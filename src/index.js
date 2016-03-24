@@ -10,6 +10,7 @@ const error = require( './error.js' );
 const alias = mongo.alias;
 
 // TODO flags
+// TODO return all metadata instead of just ids
 const read = R.curry(( s3, id ) => {
     return mongo.isDirectory( id )
     .then( isDirectory => {
