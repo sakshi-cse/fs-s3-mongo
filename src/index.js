@@ -23,6 +23,7 @@ const read = R.curry(( s3, id ) => {
 });
 
 // TODO flags
+// TODO investigate simplifying to single mongo call if create can also be used as validation
 const create = R.curry(( s3, bucket, parentId, type, name, content ) => {
     const id = uuid();
     return mongo.findChild( parentId, name )
