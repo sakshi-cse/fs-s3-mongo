@@ -91,6 +91,7 @@ exports.create = function create( parentId, id, mimeType, name, size ) {
     ) return error.INVALID_PARAMETERS;
     return exports.find( parentId )
     .then(() => {
+        // TODO test if this rejects if document already exists
         const file = new File({
             _id: id,
             mimeType,
