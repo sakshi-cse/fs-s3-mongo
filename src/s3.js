@@ -1,66 +1,61 @@
 'use strict';
 
-/* eslint no-unused-vars: 0 */
-
+const bluebird = require( 'bluebird' );
+const R = require( 'ramda' );
+const s3UploadStream = require( 's3-upload-stream' );
 const aws = require( 'aws-sdk' );
 
-const bucket = new aws.S3({ params: {
-    Bucket: process.env.AWS_BUCKET,
-    Region: process.env.AWS_REGION,
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    apiVersion: process.env.AWS_API_VERSION || 3,
-}});
+const mapIds = R.map(( id ) => {
+    return { Key: id };
+});
 
-// TODO: investigate Bluebird for PromisifyAll
-function promisifyS3Action( action, params ) {
+const getUrl = R.curry(( options, id ) => {
+    return `https://${options.region}.amazonaws.com/${options.bucket}/${id}`;
+});
+
+const write = R.curry(( s3Stream, options, id, type, content ) => {
     return new Promise(( resolve, reject ) => {
-        bucket[action]( params, ( err, res ) => {
-            if ( err ) {
-                reject( err );
-            }
-            else {
-                resolve( res );
-            }
+        const upload = s3Stream.upload({
+            Bucket: options.bucket,
+            Key: id,
+            ACL: 'public-read',
+            ContentType: type,
         });
+        let size = 0;
+
+        if ( options.maxPartSize ) upload.maxPartSize( options.maxPartSize );
+        if ( options.concurrentParts ) upload.concurrentParts( options.concurrentParts );
+
+        upload.on( 'error', reject );
+        upload.on( 'uploaded', () => resolve( size ));
+        upload.on( 'part', data => {
+            size += data.uploadedSize;
+        });
+
+        content.pipe( upload );
     });
-}
+});
 
-// Read content of s3 bucket by GUID
-module.exports.read = ( GUID ) => {
-    const params = { Key: GUID };
+const destroy = R.curry(( s3, options, ids ) => {
+    return s3.deleteObjectsAsync({
+        Bucket: options.bucket,
+        Delete: {
+            Objects: mapIds( ids ),
+        },
+    });
+});
 
-    return promisifyS3Action( 'getObject', params );
-};
+module.exports = ( config ) => {
+    if ( typeof config !== 'object' ||
+        typeof config.bucket !== 'string' ||
+        typeof config.region !== 'string'
+    ) throw new Error( 'INVALID_CONFIG' );
 
-// Write content to the s3 bucket via the GUID. Note that this always overwrites
-module.exports.write = ( GUID, content ) => {
-    const params = {
-        Key: GUID,
-        Body: content,
+    const s3 = bluebird.promisifyAll( new aws.S3( config ));
+    const s3Stream = s3UploadStream( s3 );
+    return {
+        write: write( s3Stream, config ),
+        destroy: destroy( s3, config ),
+        getUrl: getUrl( config ),
     };
-
-    return promisifyS3Action( 'putObject', params );
-};
-
-// Copy one GUID's content to another GUID
-module.exports.copy = ( fromGUID, toGUID ) => {
-    const params = {
-        Key: toGUID,
-        CopySource: fromGUID,
-    };
-
-    return promisifyS3Action( 'copyObject', params );
-};
-
-// Delete from s3 by GUID
-module.exports.destroy = ( GUID ) => {
-    const params = { Key: GUID };
-
-    return promisifyS3Action( 'deleteObject', params );
-};
-
-// Grab content by GUID, then compress and return to the client
-module.exports.download = ( GUID, compressionType ) => {
-    return Promise.reject( 'NOT_IMPLEMENTED' );
 };

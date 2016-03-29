@@ -1,51 +1,118 @@
 'use strict';
 
-/* eslint no-unused-vars: 0 */
+const mongoose = require( 'mongoose' );
+const R = require( 'ramda' );
+const error = require( './error.js' );
+const File = require( './schema.js' );
+const conn = mongoose.connection;
+mongoose.Promise = Promise;
 
-const utils = require( './utils.js' );
-const Meta = require( '../schemas/metadata.js' );
+function mustExist( record ) {
+    return record || error.INVALID_RESOURCE;
+}
 
-// exports = module.exports;
+function destroyChildren( id ) {
+    return exports.findChildren( id )
+    .then( children => children ?
+        Promise.all( children.map( child => exports.destroy( child._id ))) : id
+    );
+}
 
-// Insert a document
-module.exports.insert = Meta.insert;
+function destroyOne( id ) {
+    return File.findOneAndRemove({ _id: id }).exec()
+    .then( mustExist )
+    .then(() => id );
+}
 
-// Search for a document, with an optional sorting parameter
-module.exports.findByParameter = Meta.find;
-
-// Delete document by GUID
-module.exports.deleteByGUID = Meta.findByIdAndRemove;
-
-// Update last modified timestamp per GUID
-module.exports.setLastModifiedbyGUID = ( GUID ) => module.exports.updateByGUID( GUID, { lastModified: Date.now() });
-
-// Update the name per GUID
-module.exports.setNameByGUID = ( GUID, name ) => module.exports.updateByGUID( GUID, { name, lastModified: Date.now() });
-
-// Generalized update function by GUID
-module.exports.updateByGUID = Meta.findByIdAndUpdate;
-
-// Return mongo document by GUID. Throws error if no document is found
-module.exports.findByGUID = Meta.findById;
-
-// Returns a boolean parameter to the next then() block
-module.exports.doesResourceExist = function doesResourceExist( GUID ) {
-    return exports.findByGUID( GUID )
-    .exec()
-    .then( record => !!record )
-    .catch( utils.handleError );
-};
-
-// Returns a boolean parameter to the next then() block
-module.exports.isDirectory = function isDirectory( GUID ) {
-    exports.findByGUID( GUID )
-    .exec()
-    .then( record => {
-        if ( !record ) {
-            throw new Error( 'RESOURCE_NOT_FOUND' );
+exports.connect = function connect( config ) {
+    return new Promise(( resolve, reject ) => {
+        if ( conn.readyState === 1 ) {
+            // we're already connected
+            return resolve();
         }
-
-        return record.mimeType === 'folder';
-    })
-    .catch( utils.handleError );
+        const ip = config && config.ip ? config.ip : process.env.MONGO_IP || 'localhost';
+        const mongoAddress = `mongodb://${ip}:27017`;
+        mongoose.connect( mongoAddress );
+        conn.on( 'error', reject );
+        conn.on( 'open', resolve );
+    });
 };
+
+
+exports.find = function find( id ) {
+    if ( typeof id !== 'string' ) return error.INVALID_PARAMETERS;
+    return File.findById( id ).exec()
+    .then( mustExist );
+};
+
+exports.findChildren = function findChildren( id ) {
+    if ( typeof id !== 'string' ) return error.INVALID_PARAMETERS;
+    return File.find({ parents: id }).exec();
+};
+
+exports.findChild = function findChild( parentId, childName ) {
+    if ( typeof parentId !== 'string' || typeof childName !== 'string' ) return error.INVALID_PARAMETERS;
+    return File.findOne({ $and: [{ name: childName }, { parents: parentId }] }).exec()
+    .then( mustExist );
+};
+
+exports.isDirectory = function isDirectory( id ) {
+    if ( typeof id !== 'string' ) return error.INVALID_PARAMETERS;
+    return exports.find( id )
+    .then( record => record.mimeType === 'folder' );
+};
+
+// TODO: upsert
+exports.update = function update( id, fields ) {
+    const safeFields = [ 'parents', 'name', 'size' ];
+    const toUpdate = R.pick( safeFields, fields || {});
+    toUpdate.lastModified = Date.now();
+    return File.findOneAndUpdate({ _id: id }, toUpdate ).exec()
+    .then( mustExist );
+};
+
+
+exports.alias = function alias( fullPath, rootId ) {
+    if ( typeof fullPath !== 'string' || typeof rootId !== 'string' ) return error.INVALID_PARAMETERS;
+    return R.reduce(( queue, name ) =>
+        queue.then(( file ) => exports.findChild( file._id, name )),
+        exports.find( rootId ),
+        fullPath.split( '/' )
+    )
+    .then( file => Promise.resolve( file._id ));
+};
+
+exports.create = function create( parentId, id, mimeType, name, size ) {
+    if ( typeof parentId !== 'string' ||
+        typeof id !== 'string' ||
+        typeof mimeType !== 'string' ||
+        typeof name !== 'string' ||
+        typeof size !== 'number'
+    ) return error.INVALID_PARAMETERS;
+    return exports.find( parentId )
+    .then(() => {
+        // TODO test if this rejects if document already exists
+        const file = new File({
+            _id: id,
+            mimeType,
+            size,
+            dateCreated: new Date(), // https://docs.mongodb.org/v3.0/reference/method/Date/
+            lastModified: new Date(), // https://docs.mongodb.org/v3.0/reference/method/Date/
+            parents: [parentId],
+            name,
+        });
+        return file.save();
+    });
+};
+
+exports.destroy = function destroy( id ) {
+    if ( typeof id !== 'string' ) return error.INVALID_PARAMETERS;
+    return Promise.all([
+        destroyChildren( id ),
+        destroyOne( id ),
+    ])
+    .then( R.flatten );
+};
+
+// TODO write .copy()
+// TODO wrtie .move()

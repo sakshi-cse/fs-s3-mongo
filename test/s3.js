@@ -1,70 +1,51 @@
-// 'use strict';
-//
-// /* eslint-env mocha */
-//
-// const chai = require( 'chai' );
-// const expect = chai.expect;
-// const chaiaspromised = require( 'chai-as-promised' );
-// const sinonchai = require( 'sinon-chai' );
-//
-// const s3 = require( '../src/s3.js' );
-//
-// chai.use( sinonchai );
-// chai.use( chaiaspromised );
-//
-// describe( 's3 wrapper: ', () => {
-//     describe( 'read() ', () => {
-//         it( 'should reject with INVALID_RESOURCE_OR_PATH when given an invalid path', () => {
-//             const path = 'invalid/path/here/';
-//             const resource = 'goat.jpg';
-//
-//             return expect( s3.read( path + resource )).to.be.rejectedWith( 'INVALID_RESOURCE_OR_PATH' );
-//         });
-//
-//         it( 'should return a resource when given a valid path', () => {
-//             const path = 'valid/path/here/';
-//             const resource = 'goat.jpg';
-//
-//             // TODO: figure out how to test multi-part form responses
-//             return expect( s3.read( path + resource )).to.be.fulfilled
-//                 .and.eventually.have.property( 'data' );
-//         });
-//     });
-//
-//     it( 'should be able to write a new resource', () => {
-//         const path = 'new/valid/path/here/';
-//         const resource = 'goat.jpg';
-//         const data = {};
-//
-//         // TODO: figure out how to test multi-part form data
-//         return expect( s3.write( path + resource, data )).to.be.fulfilled
-//             .and.eventually.have.property( 'status' ).and.equal( 'SUCCESS' );
-//     });
-//
-//     it( 'should be able to overwrite an existing resource', () => {
-//         const path = 'existing/valid/path/here/';
-//         const resource = 'goat.jpg';
-//         const data = {};
-//
-//         // TODO: figure out how to test multi-part form data
-//         return expect( s3.write( path + resource, data )).to.be.fulfilled
-//             .and.eventually.have.property( 'status' ).and.equal( 'SUCCESS' );
-//     });
-//
-//     it( 'should be able to copy an existing resource', () => {
-//         const path = 'valid/path/here/';
-//         const resource = 'goat.jpg';
-//         const newPath = 'new/path/here/';
-//
-//         return expect( s3.copy( path + resource, newPath + resource )).to.be.fulfilled
-//             .and.eventually.have.property( 'status' ).and.equal( 'SUCCESS' );
-//     });
-//
-//     it( 'should be able to delete an existing resource', () => {
-//         const path = 'valid/path/here/';
-//         const resource = 'goat.jpg';
-//
-//         return expect( s3.destroy( path + resource )).to.be.fulfilled
-//             .and.eventually.have.property( 'status' ).and.equal( 'SUCCESS' );
-//     });
-// });
+'use strict';
+
+const chai = require( 'chai' );
+const expect = chai.expect;
+const chaiaspromised = require( 'chai-as-promised' );
+const fs = require( 'fs' );
+const s3Module = require( '../src/s3.js' );
+
+chai.use( chaiaspromised );
+
+describe( 's3', () => {
+    let s3;
+    describe( 'intializer', function() {
+        it( 'should throw "INVALID_CONFIG" with malformed config', function() {
+            expect(() => s3Module()).to.throw( 'INVALID_CONFIG' );
+            expect(() => s3Module({ bucket: '' })).to.throw( 'INVALID_CONFIG' );
+            expect(() => s3Module({ region: '' })).to.throw( 'INVALID_CONFIG' );
+        });
+
+        it( 'should return the s3 object', function() {
+            s3 = s3Module({
+                bucket: process.env.AWS_TEST_BUCKET,
+                region: process.env.AWS_TEST_REGION,
+            });
+        });
+    });
+
+    describe( '.write()', function() {
+        it( 'should resolve with the size of the resource', function() {
+            this.timeout( 10000 );
+            return expect(
+                s3.write( 'test-guid', 'text/plain', fs.createReadStream( `${__dirname}/testfiles/test.txt` ))
+            ).to.eventually.equal( 18 );
+        });
+    });
+
+    describe( '.destroy()', function() {
+        it( 'should resolve', function() {
+            this.timeout( 10000 );
+            return expect( s3.destroy(['test-guid'])).to.be.fulfilled;
+        });
+    });
+
+    describe( '.getUrl()', function() {
+        it( 'should return the full url of the resource', function() {
+            expect( s3.getUrl( 'test-guid' )).to.equal(
+                `https://${process.env.AWS_TEST_REGION}.amazonaws.com/${process.env.AWS_TEST_BUCKET}/test-guid`
+            );
+        });
+    });
+});
