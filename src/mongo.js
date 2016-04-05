@@ -1,5 +1,6 @@
 'use strict';
 
+const uuid = require( 'uuid-v4' );
 const mongoose = require( 'mongoose' );
 const R = require( 'ramda' );
 const error = require( './error.js' );
@@ -9,6 +10,21 @@ mongoose.Promise = Promise;
 
 function mustExist( record ) {
     return record || error.INVALID_RESOURCE;
+}
+
+function searchChildren( id, params, flags ) {
+    return exports.findChildren( id )
+    .then( children => children.map( child => {
+        if ( child.type === 'folder' ) return exports.search( child._id, params, flags );
+    }));
+}
+
+function searchOne( id, params ) {
+    const criteria = [{ _id: id }];
+    for ( const key in params ) {
+        if ( R.has( key, params )) criteria.push({ key: params[key] });
+    }
+    return File.find({ $and: criteria }).exec();
 }
 
 function destroyChildren( id ) {
@@ -22,6 +38,21 @@ function destroyOne( id ) {
     return File.findOneAndRemove({ _id: id }).exec()
     .then( mustExist )
     .then(() => id );
+}
+
+function copyChildren( id, generatedId ) {
+    return exports.findChildren( id )
+    .then( children => Promise.all( children.map( child => exports.copy( child._id, generatedId ))));
+}
+
+function copyOne( id, destinationFolderId, generatedId ) {
+    return exports.isDirectory( destinationFolderId )
+    .then( isDirectory => {
+        if ( !isDirectory ) return error.INVALID_RESOUCE_TYPE;
+        return exports.find( id );
+    })
+    .then( record => exports.create( destinationFolderId, generatedId, record.mimeType, record.name, record.size ))
+    .then(( ) => [{ id, generatedId }]);
 }
 
 exports.connect = function connect( config ) {
@@ -114,5 +145,37 @@ exports.destroy = function destroy( id ) {
     .then( R.flatten );
 };
 
-// TODO write .copy()
-// TODO wrtie .move()
+exports.copy = function copy( id, destinationFolderId ) {
+    if ( typeof id !== 'string' ||
+        typeof destinationFolderId !== 'string'
+     ) return error.INVALID_PARAMETERS;
+
+    return exports.isDirectory( id )
+    .then( isDirectory => {
+        const generatedId = uuid();
+        if ( !isDirectory ) return copyOne( id, destinationFolderId, generatedId );
+        return Promise.all([
+            copyOne( id, destinationFolderId, generatedId ),
+            copyChildren( id, generatedId ),
+        ]);
+    })
+    .then( R.flatten );
+};
+
+// TODO curry the functions to reduce the parameter passing
+// TODO handle sorting
+exports.search = function search( id, params, sort, flags ) {
+    if ( typeof id !== 'string' ||
+        typeof params !== 'object' ||
+        typeof sort !== 'string' ||
+        ![].isArray( flags )
+    ) return error.INVALID_PARAMETERS;
+
+    if ( R.contains( 'r', flags )) return searchOne( id, params );
+
+    return Promise.all([
+        searchOne( id, params ),
+        searchChildren( id, params, flags ),
+    ])
+    .then( R.flatten );
+};

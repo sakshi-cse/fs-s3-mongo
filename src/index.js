@@ -57,24 +57,27 @@ const destroy = R.curry(( s3, id ) => {
     .then( s3.destroy );
 });
 
-// TODO
-const search = R.curry(() => {
-    return error.NOT_IMPLEMENTED;
-});
+const search = mongo.search;
 
 // TODO
+// TODO investigate archiver
 const download = R.curry(() => {
     return error.NOT_IMPLEMENTED;
 });
 
-// TODO
-const copy = R.curry(() => {
-    return error.NOT_IMPLEMENTED;
+// TODO flags
+const copy = R.curry(( s3, id, destinationFolderId ) => {
+    return mongo.copy( id, destinationFolderId )
+    .then( records => records.map( record => s3.copy( record.id, record.generatedId )));
 });
 
-// TODO
-const move = R.curry(() => {
-    return error.NOT_IMPLEMENTED;
+// TODO flags
+const move = R.curry(( moveId, destinationId ) => {
+    return mongo.isDirectory( destinationId )
+    .then( isDirectory => {
+        if ( !isDirectory ) return error.INVALID_RESOUCE_TYPE;
+        return mongo.update( moveId, { parents: [destinationId] });
+    });
 });
 
 module.exports = ( config ) => {
@@ -91,7 +94,7 @@ module.exports = ( config ) => {
 
         search: search,
         download: download,
-        copy: copy,
+        copy: copy( s3 ),
         move: move,
     }));
 };

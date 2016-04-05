@@ -36,6 +36,15 @@ const write = R.curry(( s3Stream, options, id, type, content ) => {
     });
 });
 
+const copy = R.curry(( s3, options, oldId, newId ) => {
+    return s3.copyObjectAsync({
+        Bucket: options.bucket,
+        Key: newId,
+        ACL: 'public-read',
+        CopySource: `${options.bucket}/${oldId}`,
+    });
+});
+
 const destroy = R.curry(( s3, options, ids ) => {
     return s3.deleteObjectsAsync({
         Bucket: options.bucket,
@@ -55,6 +64,7 @@ module.exports = ( config ) => {
     const s3Stream = s3UploadStream( s3 );
     return {
         write: write( s3Stream, config ),
+        copy: copy( s3, config ),
         destroy: destroy( s3, config ),
         getUrl: getUrl( config ),
     };
