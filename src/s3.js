@@ -10,7 +10,7 @@ const mapIds = R.map(( id ) => {
 });
 
 const getUrl = R.curry(( options, id ) => {
-    return `https://${options.region}.amazonaws.com/${options.bucket}/${id}`;
+    return `https://s3.amazonaws.com/${options.bucket}/${id}`;
 });
 
 const write = R.curry(( s3Stream, options, id, type, content ) => {
