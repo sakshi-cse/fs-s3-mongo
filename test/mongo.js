@@ -5,7 +5,7 @@ const expect = chai.expect;
 const chaiaspromised = require( 'chai-as-promised' );
 const mime = require( 'mime' );
 const mongo = require( '../src/mongo.js' );
-const File = require( '../src/schema.js' );
+const File = mongo.File;
 
 chai.use( chaiaspromised );
 
