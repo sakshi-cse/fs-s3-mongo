@@ -4,17 +4,21 @@ const bluebird = require( 'bluebird' );
 const R = require( 'ramda' );
 const s3UploadStream = require( 's3-upload-stream' );
 const aws = require( 'aws-sdk' );
+const logger = require( 'brinkbit-logger' )({ __filename, transport: 'production' });
 
 const mapIds = R.map(( id ) => {
     return { Key: id };
 });
 
 const getUrl = R.curry(( options, id ) => {
-    return `https://s3.amazonaws.com/${options.bucket}/${id}`;
+    const url = `https://s3.amazonaws.com/${options.bucket}/${id}`;
+    logger.info( `returning url for ${id}: ${url}` );
+    return url;
 });
 
 const write = R.curry(( s3Stream, options, id, type, content ) => {
     return new Promise(( resolve, reject ) => {
+        logger.info( `Initializing upload stream` );
         const upload = s3Stream.upload({
             Bucket: options.bucket,
             Key: id,
@@ -37,6 +41,7 @@ const write = R.curry(( s3Stream, options, id, type, content ) => {
 });
 
 const copy = R.curry(( s3, options, oldId, newId ) => {
+    logger.info( `Attempting to copy s3 GUID ${oldId} to ${newId}` );
     return s3.copyObjectAsync({
         Bucket: options.bucket,
         Key: newId,
@@ -46,6 +51,7 @@ const copy = R.curry(( s3, options, oldId, newId ) => {
 });
 
 const destroy = R.curry(( s3, options, ids ) => {
+    logger.info( `Attempting to delete s3 GUIDs ${ids}` );
     return s3.deleteObjectsAsync({
         Bucket: options.bucket,
         Delete: {
@@ -59,6 +65,8 @@ module.exports = ( config ) => {
         typeof config.bucket !== 'string' ||
         typeof config.region !== 'string'
     ) throw new Error( 'INVALID_CONFIG' );
+
+    logger.info( `Initializing module with ${config}` );
 
     const s3 = bluebird.promisifyAll( new aws.S3( config ));
     const s3Stream = s3UploadStream( s3 );

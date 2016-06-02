@@ -5,6 +5,7 @@ const R = require( 'ramda' );
 const s3Module = require( './s3.js' );
 const mongo = require( './mongo.js' );
 const error = require( './error.js' );
+const logger = require( 'brinkbit-logger' )({ __filename, transport: 'production' });
 
 // TODO flags
 const alias = mongo.alias;
@@ -12,12 +13,16 @@ const alias = mongo.alias;
 // TODO flags
 // TODO return all metadata instead of just ids
 const read = R.curry(( s3, id ) => {
+    logger.info( `checking isDirectory for ${id}` );
     return mongo.isDirectory( id )
     .then( isDirectory => {
         if ( isDirectory ) {
+            logger.info( `${id} is a directory. Calling findChildren on it` );
             return mongo.findChildren( id )
             .then( R.pluck( '_id' ));
         }
+
+        logger.info( `${id} is a resource -- calling getUrl on it` );
         return s3.getUrl( id );
     });
 });
@@ -26,6 +31,8 @@ const read = R.curry(( s3, id ) => {
 // TODO investigate simplifying to single mongo call if create can also be used as validation
 const create = R.curry(( s3, bucket, parentId, type, name, content ) => {
     const id = uuid();
+    logger.info( `Generated new id for resource: ${id}` );
+    logger.info( `Calling findChild on name: ${name}, parentId: ${parentId}` );
     return mongo.findChild( parentId, name )
     .then(() => s3.write( id, type, content ))
     .then( size => mongo.create( parentId, id, type, name, size ));
@@ -33,6 +40,8 @@ const create = R.curry(( s3, bucket, parentId, type, name, content ) => {
 
 // TODO flags
 const inspect = R.curry(( id, fields ) => {
+    logger.info( `Attempting to inspect fields: ${fields}` );
+    logger.info( `Calling find on id: ${id}` );
     return mongo.find( id )
     .then( R.pick( fields ));
 });
@@ -40,19 +49,24 @@ const inspect = R.curry(( id, fields ) => {
 // TODO flags
 const update = R.curry(( s3, id, content ) => {
     if ( typeof content.pipe === 'function' ) {
+        logger.info( `Updating resource data for ${id}` );
         return mongo.update( id )
         .then(() => s3.write( id, content ));
     }
+
+    logger.info( `Updating ${id} with: ${content}` );
     return mongo.update( id, content );
 });
 
 // TODO flags
 const rename = R.curry(( id, name ) => {
+    logger.info( `Attempting to rename ${id} to ${name}` );
     return mongo.update( id, { name });
 });
 
 // TODO flags
 const destroy = R.curry(( s3, id ) => {
+    logger.info( `Attempting to destroy ${id}` );
     return mongo.destroy( id, true )
     .then( s3.destroy );
 });
@@ -62,13 +76,21 @@ const search = mongo.search;
 // TODO
 // TODO investigate archiver
 const download = R.curry(() => {
+    logger.warning( 'Download not implemented' );
     return error.NOT_IMPLEMENTED;
 });
 
 // TODO flags
 const copy = R.curry(( s3, id, destinationFolderId ) => {
+    logger.info( `Attempting to copy resource: ${id}, to destination folder: ${destinationFolderId}` );
     return mongo.copy( id, destinationFolderId )
-    .then( records => records.map( record => s3.copy( record.id, record.generatedId )));
+    .then( records => {
+        logger.info( `Updating s3 records: ${records}` );
+        return records.map( record => {
+            logger.info( `Updating s3 GUID from ${record.id} to ${record.generatedId}` );
+            return s3.copy( record.id, record.generatedId );
+        });
+    });
 });
 
 // TODO flags
@@ -81,6 +103,7 @@ const move = R.curry(( moveId, destinationId ) => {
 });
 
 module.exports = ( config ) => {
+    logger.info( `Initing module with ${config}` );
     const s3 = s3Module( config.s3 );
     return mongo.connect( config.mongo )
     .then(() => Promise.resolve({

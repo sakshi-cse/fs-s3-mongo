@@ -13,4 +13,4 @@ const fileSchema = new Schema({
     name: String, // if the resource is a folder, it ends in a '/'
 });
 
-module.exports = mongoose.model( 'File', fileSchema );
+module.exports = ( mon ) => mon.model( 'File', fileSchema );

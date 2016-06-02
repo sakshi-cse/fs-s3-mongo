@@ -4,7 +4,7 @@ const chai = require( 'chai' );
 const chaiaspromised = require( 'chai-as-promised' );
 const mime = require( 'mime' );
 const s3Mongo = require( '../src/index.js' );
-const File = require( '../src/schema.js' );
+const File = require( '../src/mongo.js' ).File;
 
 const expect = chai.expect;
 
@@ -73,7 +73,7 @@ describe( 'index', function() {
 
             it( 'should return the s3 url if resource is a file', function() {
                 return expect( s3m.read( 'TEST-GUID-test.txt' )).to.eventually.equal(
-                    `https://${process.env.AWS_TEST_REGION}.amazonaws.com/${process.env.AWS_TEST_BUCKET}/TEST-GUID-test.txt`
+                    `https://s3.amazonaws.com/${process.env.AWS_TEST_BUCKET}/TEST-GUID-test.txt`
                 );
             });
         });

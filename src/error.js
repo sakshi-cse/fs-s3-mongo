@@ -1,6 +1,9 @@
 'use strict';
 
+const logger = require( 'brinkbit-logger' )({ __filename, transport: 'production' });
+
 function rejectError( message ) {
+    logger.error( `Throwing error: ${message}` );
     return Promise.reject( new Error( message ));
 }
 

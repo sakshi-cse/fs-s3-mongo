@@ -25,7 +25,9 @@
     "mongoose": "^4.4.5",
     "ramda": "^0.19.1",
     "s3-upload-stream": "^1.0.7",
-    "uuid-v4": "^0.1.0"
+    "uuid-v4": "^0.1.0",
+    "brinkbit-logger": "^0.2.2",
+    "brinkbit-mongodb": "git+https://github.com/Brinkbit/brinkbit-mongodb"
   },
   "pre-commit": [
     "eslint-pre-commit"

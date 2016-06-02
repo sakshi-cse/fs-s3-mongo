@@ -44,7 +44,7 @@ describe( 's3', () => {
     describe( '.getUrl()', function() {
         it( 'should return the full url of the resource', function() {
             expect( s3.getUrl( 'test-guid' )).to.equal(
-                `https://${process.env.AWS_TEST_REGION}.amazonaws.com/${process.env.AWS_TEST_BUCKET}/test-guid`
+                `https://s3.amazonaws.com/${process.env.AWS_TEST_BUCKET}/test-guid`
             );
         });
     });
