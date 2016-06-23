@@ -6,7 +6,7 @@ const conn = mongoose.connection;
 const R = require( 'ramda' );
 const error = require( './error.js' );
 const File = require( './schema.js' )( conn );
-const logger = require( 'brinkbit-logger' )({ __filename, transport: 'production' });
+const logger = require( 'brinkbit-logger' )({ __filename });
 const db = require( 'brinkbit-mongodb' )( conn );
 mongoose.Promise = Promise;
 
@@ -117,14 +117,15 @@ exports.update = function update( id, fields ) {
 
 
 exports.alias = function alias( fullPath, rootId ) {
+    logger.info( `checking params: ${fullPath}, ${rootId}` );
     if ( typeof fullPath !== 'string' || typeof rootId !== 'string' ) return error.INVALID_PARAMETERS;
-    logger.info( `Attempting to alias ${fullPath} for ${rootId} to a GUID` );
+    logger.info( `Attempting to alias ${fullPath} under ${rootId} to a GUID` );
     return R.reduce(( queue, name ) =>
         queue.then(( file ) => exports.findChild( file._id, name )),
         exports.find( rootId ),
         fullPath.split( '/' )
     )
-    .then( file => Promise.resolve( file._id ));
+    .then( file => Promise.resolve({ GUID: file._id }));
 };
 
 exports.create = function create( parentId, id, mimeType, name, size ) {
@@ -138,7 +139,6 @@ exports.create = function create( parentId, id, mimeType, name, size ) {
     return exports.find( parentId )
     .then(() => {
         // TODO test if this rejects if document already exists
-
         logger.info( `Creating new file and saving it` );
         const file = new File({
             _id: id,
@@ -149,8 +149,13 @@ exports.create = function create( parentId, id, mimeType, name, size ) {
             parents: [parentId],
             name,
         });
-        return file.save();
-    });
+        return file.save(( err ) => {
+            if ( err ) return error.DEFAULT_SERVER_ERROR;
+            logger.info( `Document saved successfully!` );
+            return Promise.resolve();
+        });
+    })
+    .catch( err => logger.error( `ERROR: ${err}` ));
 };
 
 exports.destroy = function destroy( id ) {
