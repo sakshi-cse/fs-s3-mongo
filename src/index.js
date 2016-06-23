@@ -29,11 +29,17 @@ const read = R.curry(( s3, id ) => {
 
 // TODO flags
 // TODO investigate simplifying to single mongo call if create can also be used as validation
-const create = R.curry(( s3, bucket, parentId, type, name, content ) => {
+const create = R.curry(( s3, parentId, type, name, content ) => {
     const id = uuid();
     logger.info( `Generated new id for resource: ${id}` );
     logger.info( `Calling findChild on name: ${name}, parentId: ${parentId}` );
     return mongo.findChild( parentId, name )
+    .catch( err => {
+        // If any error is thrown other than INVALID_RESOURCE (file not found), then bubble it up
+        if ( err.message !== 'INVALID_RESOURCE' ) {
+            return Promise.reject( err.message );
+        }
+    })
     .then(() => s3.write( id, type, content ))
     .then( size => mongo.create( parentId, id, type, name, size ));
 });
@@ -43,7 +49,9 @@ const inspect = R.curry(( id, fields ) => {
     logger.info( `Attempting to inspect fields: ${fields}` );
     logger.info( `Calling find on id: ${id}` );
     return mongo.find( id )
-    .then( R.pick( fields ));
+    .then(( obj ) => {
+        return fields ? R.pick( fields, obj ) : obj;
+    });
 });
 
 // TODO flags
@@ -107,17 +115,17 @@ module.exports = ( config ) => {
     const s3 = s3Module( config.s3 );
     return mongo.connect( config.mongo )
     .then(() => Promise.resolve({
-        alias: alias,
+        alias,
         read: read( s3 ),
         create: create( s3 ),
-        inspect: inspect,
+        inspect,
         update: update( s3 ),
-        rename: rename,
+        rename,
         destroy: destroy( s3 ),
 
-        search: search,
-        download: download,
+        search,
+        download,
         copy: copy( s3 ),
-        move: move,
+        move,
     }));
 };
