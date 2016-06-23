@@ -5,7 +5,7 @@ const R = require( 'ramda' );
 const s3Module = require( './s3.js' );
 const mongo = require( './mongo.js' );
 const error = require( './error.js' );
-const logger = require( 'brinkbit-logger' )({ __filename, transport: 'production' });
+const logger = require( 'brinkbit-logger' )({ __filename });
 
 // TODO flags
 const alias = mongo.alias;
@@ -103,7 +103,7 @@ const move = R.curry(( moveId, destinationId ) => {
 });
 
 module.exports = ( config ) => {
-    logger.info( `Initing module with ${config}` );
+    logger.info( `Initing module with ${JSON.stringify( config )}` );
     const s3 = s3Module( config.s3 );
     return mongo.connect( config.mongo )
     .then(() => Promise.resolve({

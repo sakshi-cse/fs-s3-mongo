@@ -6,7 +6,7 @@ const conn = mongoose.connection;
 const R = require( 'ramda' );
 const error = require( './error.js' );
 const File = require( './schema.js' )( conn );
-const logger = require( 'brinkbit-logger' )({ __filename, transport: 'production' });
+const logger = require( 'brinkbit-logger' )({ __filename });
 const db = require( 'brinkbit-mongodb' )( conn );
 mongoose.Promise = Promise;
 

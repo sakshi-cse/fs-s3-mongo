@@ -4,7 +4,7 @@ const bluebird = require( 'bluebird' );
 const R = require( 'ramda' );
 const s3UploadStream = require( 's3-upload-stream' );
 const aws = require( 'aws-sdk' );
-const logger = require( 'brinkbit-logger' )({ __filename, transport: 'production' });
+const logger = require( 'brinkbit-logger' )({ __filename });
 
 const mapIds = R.map(( id ) => {
     return { Key: id };

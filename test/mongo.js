@@ -1,5 +1,7 @@
 'use strict';
 
+process.env.NODE_ENV = 'production';
+
 const chai = require( 'chai' );
 const expect = chai.expect;
 const chaiaspromised = require( 'chai-as-promised' );
