@@ -12,6 +12,7 @@
             "singleValue": false,
             "objectsInArrays": false,
             "arraysInArrays": false
-        }]
+        }],
+        "complexity": [2, 5]
     }
 }
