@@ -113,7 +113,7 @@ const move = R.curry(( moveId, destinationId ) => {
 });
 
 module.exports = ( config ) => {
-    // logger.info( `Initializing fs-s3-mongo module with ${JSON.stringify( config )}` );
+    logger.info( `Initing module` );
     const s3 = s3Module( config.s3 );
     return mongo.connect( config.mongo )
     .then(() =>
