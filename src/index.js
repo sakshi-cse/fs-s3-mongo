@@ -10,16 +10,18 @@ const logger = require( 'brinkbit-logger' )({ __filename });
 // TODO flags
 const alias = mongo.alias;
 
-// TODO flags
 // TODO return all metadata instead of just ids
-const read = R.curry(( s3, id ) => {
+const read = R.curry(( s3, id, flags ) => {
     logger.info( `checking isDirectory for ${id}` );
     return mongo.isDirectory( id )
     .then( isDirectory => {
         if ( isDirectory ) {
             logger.info( `${id} is a directory. Calling findChildren on it` );
-            return mongo.findChildren( id )
-            .then( R.pluck( '_id' ));
+            return mongo.readDirectory( id, flags )
+            .then( results => {
+                logger.info( `Sending back directory structure: ${JSON.stringify( results )}` );
+                return results;
+            });
         }
 
         logger.info( `${id} is a resource -- calling getUrl on it` );
@@ -111,21 +113,23 @@ const move = R.curry(( moveId, destinationId ) => {
 });
 
 module.exports = ( config ) => {
-    logger.info( `Initing module with ${JSON.stringify( config )}` );
+    // logger.info( `Initializing fs-s3-mongo module with ${JSON.stringify( config )}` );
     const s3 = s3Module( config.s3 );
     return mongo.connect( config.mongo )
-    .then(() => Promise.resolve({
-        alias,
-        read: read( s3 ),
-        create: create( s3 ),
-        inspect,
-        update: update( s3 ),
-        rename,
-        destroy: destroy( s3 ),
+    .then(() =>
+        Promise.resolve({
+            alias,
+            read: read( s3 ),
+            create: create( s3 ),
+            inspect,
+            update: update( s3 ),
+            rename,
+            destroy: destroy( s3 ),
 
-        search,
-        download,
-        copy: copy( s3 ),
-        move,
-    }));
+            search,
+            download,
+            copy: copy( s3 ),
+            move,
+        })
+    );
 };

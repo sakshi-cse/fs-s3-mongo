@@ -105,6 +105,39 @@ exports.isDirectory = function isDirectory( id ) {
     .then( record => record.mimeType === 'folder' );
 };
 
+exports.readDirectory = function readDirectory( id, flags ) {
+    return exports.findChildren( id )
+    .then( R.pluck( '_id' ))
+    .then( guids => {
+        if ( R.indexOf( 'r', flags ) === -1 ) {
+            logger.info( `Not recursive -- returning [${guids}]` );
+            return guids;
+        }
+
+        logger.info( `Plucked out these guids: [${guids}]` );
+
+        return Promise.all( guids.map( GUID =>
+            exports.isDirectory( GUID )
+            .then( isDirectory => {
+                if ( isDirectory ) {
+                    logger.info( `Recursively calling into readDirectory for ${GUID}` );
+
+                    // Resolve readDirectory asyncronously to properly handle the recursion
+                    return new Promise( resolve => {
+                        return readDirectory( GUID, flags )
+                        .then( children => {
+                            return resolve({ GUID, children });
+                        });
+                    });
+                }
+
+                logger.info( `Returning ${GUID}` );
+                return { GUID };
+            })
+        ));
+    });
+};
+
 // TODO: upsert
 exports.update = function update( id, fields ) {
     logger.info( `Updating ${id} with ${fields}` );
