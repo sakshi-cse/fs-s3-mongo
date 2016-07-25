@@ -107,34 +107,30 @@ exports.isDirectory = function isDirectory( id ) {
 
 exports.readDirectory = function readDirectory( id, flags ) {
     return exports.findChildren( id )
-    .then( R.pluck( '_id' ))
-    .then( guids => {
+    .then( childrenDocs => {
         if ( R.indexOf( 'r', flags ) === -1 ) {
-            logger.info( `Not recursive -- returning [${guids}]` );
-            return guids;
+            logger.info( `Not recursive -- returning ids for [${childrenDocs}]` );
+            return R.pluck( '_id' )( childrenDocs );
         }
 
-        logger.info( `Plucked out these guids: [${guids}]` );
+        return Promise.all( childrenDocs.map( doc => {
+            // Don't reveal non-requester parents
+            doc.parents = id;
+            if ( doc.mimeType === 'folder' ) {
+                logger.info( `Recursively calling into readDirectory for ${doc}` );
 
-        return Promise.all( guids.map( GUID =>
-            exports.isDirectory( GUID )
-            .then( isDirectory => {
-                if ( isDirectory ) {
-                    logger.info( `Recursively calling into readDirectory for ${GUID}` );
-
-                    // Resolve readDirectory asyncronously to properly handle the recursion
-                    return new Promise( resolve => {
-                        return readDirectory( GUID, flags )
-                        .then( children => {
-                            return resolve({ GUID, children });
-                        });
+                // Resolve readDirectory asyncronously to properly handle the recursion
+                return new Promise( resolve => {
+                    return readDirectory( doc._id, flags )
+                    .then( children => {
+                        return resolve([ doc, children ]);
                     });
-                }
+                });
+            }
 
-                logger.info( `Returning ${GUID}` );
-                return { GUID };
-            })
-        ));
+            logger.info( `Returning ${doc}` );
+            return doc;
+        }));
     });
 };
 
