@@ -4,7 +4,7 @@
 cd /var/www/html
 
 # Install Node.js dependencies using npm
-npm install
+sudo npm install
 
 # Additional commands if required
 # For example, installing global dependencies or running additional setup tasks
