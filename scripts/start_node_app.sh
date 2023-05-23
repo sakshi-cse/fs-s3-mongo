@@ -7,4 +7,4 @@ cd /var/www/html
 node app.js  # Replace "app.js" with the main file of your application
 
 # Exit the script with a success status
-exit 0
+#exit 0
