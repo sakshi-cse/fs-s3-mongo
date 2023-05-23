@@ -5,12 +5,6 @@ files:
   - source: /
     destination: /var/www/html
 
-permissions:
-  - object: /var/www/html
-    owner: ubuntu
-    group: ubuntu
-    mode: 755
-
   BeforeInstall:
     - location: scripts/install_dependencies.sh
       timeout: 300
