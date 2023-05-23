@@ -4,7 +4,7 @@
 cd /var/www/html
 
 # Start the Node.js application
-node app.js  # Replace "app.js" with the main file of your application
+pm2 start  # Replace "app.js" with the main file of your application
 
 # Exit the script with a success status
 #exit 0
