@@ -1,0 +1,27 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 18  # Replace with your desired Node.js version
+
+  pre_build:
+    commands:
+      - echo Installing dependencies...
+      - npm install  # Replace with your package manager if you're not using npm
+
+  build:
+    commands:
+      - echo Building the application...
+      # Add any build commands specific to your application here
+
+  post_build:
+    commands:
+      - echo Starting MongoDB...
+      - mongod --fork --logpath ./mongodb.log  # Start MongoDB
+      # Add any post-build commands specific to your application here
+
+artifacts:
+  files:
+    - '**/*'  # Include all files in the build artifacts
+  discard-paths: yes
