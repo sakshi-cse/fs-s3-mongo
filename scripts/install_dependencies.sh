@@ -12,4 +12,4 @@ sudo npm install
 # ./setup.sh
 
 # Exit the script with a success status
-exit 0
+#exit 0
