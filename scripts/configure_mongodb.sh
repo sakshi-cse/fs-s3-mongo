@@ -14,4 +14,4 @@ sudo systemctl start mongod
 mongo admin --eval "db.createUser({ user: 'myuser', pwd: 'mypassword', roles: [ { role: 'readWrite', db: 'mydatabase' } ] })"
 
 # Exit the script with a success status
-exit 0
+#exit 0
