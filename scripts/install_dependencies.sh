@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Go to the application directory
-cd /path/to/application
+cd /var/www/html
 
 # Install Node.js dependencies using npm
 npm install
